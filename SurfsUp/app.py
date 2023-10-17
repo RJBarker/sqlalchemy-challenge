@@ -107,7 +107,26 @@ def tobs():
 
     session.close()
 
-    
+    # Convert results to a dictionary
+    tobs_list = []
+    for date, tobs in tobs:
+        tobs_dict = {}
+        tobs_dict['Date'] = date
+        tobs_dict['Temperature'] = tobs
+        tobs_list.append(tobs_dict)
+
+    return jsonify(tobs_list)    
+
+
+@app.route("/api/v1.0/<start_date>")
+def dynamic(start_date):
+    """Dynamic query to retrieve data from the given start date - Min, Max, Avg Temp as JSON"""
+    print("Request for data with a start date given...")
+    session
+
+    data_request = session.query(func.min(Measurement.tobs),func.max(Measurement.tobs),func.avg(Measurement.tobs)).filter(Measurement.date >= dt.date(start_date))
+
+    session.close()
 
 
 if __name__ == '__main__':
