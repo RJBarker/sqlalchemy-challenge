@@ -150,7 +150,7 @@ def dynamic_1(start):
             temp_dict['Temp_Calcs'] = {
                 "Min Temperature" : tmin,
                 "Max Temperature" : tmax,
-                "Avg Temperature" : tavg
+                "Avg Temperature" : round(tavg,2)
             }
             temp_data.append(temp_dict)
 
@@ -176,33 +176,40 @@ def dynamic_2(start,end):
         s_date = dt.datetime.strptime(start, '%Y%m%d')
         e_date = dt.datetime.strptime(end, '%Y%m%d')
 
-        session
+        if (e_date > s_date):
 
-        tmin = func.min(Measurement.tobs)
-        tmax = func.max(Measurement.tobs)
-        tavg = func.avg(Measurement.tobs)
+            session
 
-        data_request = session.query(tmin,tmax,tavg).filter(Measurement.date >= s_date).filter(Measurement.date <= e_date).all()
+            tmin = func.min(Measurement.tobs)
+            tmax = func.max(Measurement.tobs)
+            tavg = func.avg(Measurement.tobs)
 
-        session.close()
+            data_request = session.query(tmin,tmax,tavg).filter(Measurement.date >= s_date).filter(Measurement.date <= e_date).all()
 
-        temp_data = []
-        for tmin, tmax, tavg in data_request:
-            temp_dict = {}
-            temp_dict[start] = {
-                "Min Temperature" : tmin,
-                "Max Temperature" : tmax,
-                "Avg Temperature" : tavg
-            }
-            temp_data.append(temp_dict)
+            session.close()
 
-        return jsonify(temp_data)
+            temp_data = []
+            for tmin, tmax, tavg in data_request:
+                temp_dict = {}
+                temp_dict['From_Date'] = start
+                temp_dict['To_Date'] = end
+                temp_dict['Temp_Calcs'] = {
+                    "Min Temperature" : tmin,
+                    "Max Temperature" : tmax,
+                    "Avg Temperature" : round(tavg,2)
+                }
+                temp_data.append(temp_dict)
+
+            return jsonify(temp_data)
+        
+        else:
+            return jsonify({"error":f"The end date '{end}' can not be less than the start date '{start}'. Please adjust your date values."}), 404
     
     # Exception handle if date given is in the incorrect format
     except ValueError:
-        return jsonify({"error": f"The specified date '{start}' may not be in the correct format.",
-                        "note": f"Place a date in the format: yyyy-mm-dd or yyyymmdd"}), 404
+        return jsonify({"error": f"One of the specified dates '{start}' or '{end}' is not in the correct format.",
+                        "note": f"Alter the dates to the format: yyyy-mm-dd or yyyymmdd"}), 404
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)
