@@ -71,8 +71,7 @@ def precip():
     precip_annual = []
     for date, prcp in annum_prcp:
         precip_dict = {}
-        precip_dict['date'] = date
-        precip_dict['precipitation'] = prcp
+        precip_dict[date] = prcp
         precip_annual.append(precip_dict)
     
     # JSONify the precip_annual list
