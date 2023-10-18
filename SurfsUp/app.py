@@ -44,11 +44,14 @@ def home():
     return (
         f"Available Routes:<br/>"
         "<br/>"
+        f"Static Routes:<br/>"
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/<start><br/>"
-        f"/api/v1.0/<start>/<end><br/>"
+        "<br/>"
+        f"Dynamic Routes:<br/>"
+        f"/api/v1.0/yyyy-mm-dd<br/>"
+        f"/api/v1.0/yyyy-mm-dd/yyyy-mm-dd<br/>"
     )
 
 @app.route("/api/v1.0/precipitation")
@@ -118,15 +121,87 @@ def tobs():
     return jsonify(tobs_list)    
 
 
-@app.route("/api/v1.0/<start_date>")
-def dynamic(start_date):
+@app.route("/api/v1.0/<start>")
+def dynamic_1(start):
     """Dynamic query to retrieve data from the given start date - Min, Max, Avg Temp as JSON"""
     print("Request for data with a start date given...")
-    session
 
-    data_request = session.query(func.min(Measurement.tobs),func.max(Measurement.tobs),func.avg(Measurement.tobs)).filter(Measurement.date >= dt.date(start_date))
+    # Convert start to date format
+    try:
+        if (start.__contains__("-")):
+            start = start.replace("-","")
+        
+        s_date = dt.datetime.strptime(start, '%Y%m%d')
 
-    session.close()
+        session
+
+        tmin = func.min(Measurement.tobs)
+        tmax = func.max(Measurement.tobs)
+        tavg = func.avg(Measurement.tobs)
+
+        data_request = session.query(tmin,tmax,tavg).filter(Measurement.date >= s_date).all()
+
+        session.close()
+
+        temp_data = []
+        for tmin, tmax, tavg in data_request:
+            temp_dict = {}
+            temp_dict['From_Date'] = start
+            temp_dict['Temp_Calcs'] = {
+                "Min Temperature" : tmin,
+                "Max Temperature" : tmax,
+                "Avg Temperature" : tavg
+            }
+            temp_data.append(temp_dict)
+
+        return jsonify(temp_data)
+    
+    # Exception handle if date given is in the incorrect format
+    except ValueError:
+        return jsonify({"error": f"The specified date '{start}' is not in the correct format.",
+                        "note": f"Place a date in the format: yyyy-mm-dd or yyyymmdd"}), 404
+
+
+@app.route("/api/v1.0/<start>/<end>")
+def dynamic_2(start,end):
+    """Dynamic query to retrieve data from the given start date to given end date - Min, Max, Avg Temp as JSON"""
+    print("Request for data with a start date and end date given...")
+
+    # Convert start to date format
+    try:
+        if (start.__contains__("-")) or (end.__contains__("-")):
+            start = start.replace("-","")
+            end = end.replace("-","")
+
+        s_date = dt.datetime.strptime(start, '%Y%m%d')
+        e_date = dt.datetime.strptime(end, '%Y%m%d')
+
+        session
+
+        tmin = func.min(Measurement.tobs)
+        tmax = func.max(Measurement.tobs)
+        tavg = func.avg(Measurement.tobs)
+
+        data_request = session.query(tmin,tmax,tavg).filter(Measurement.date >= s_date).filter(Measurement.date <= e_date).all()
+
+        session.close()
+
+        temp_data = []
+        for tmin, tmax, tavg in data_request:
+            temp_dict = {}
+            temp_dict[start] = {
+                "Min Temperature" : tmin,
+                "Max Temperature" : tmax,
+                "Avg Temperature" : tavg
+            }
+            temp_data.append(temp_dict)
+
+        return jsonify(temp_data)
+    
+    # Exception handle if date given is in the incorrect format
+    except ValueError:
+        return jsonify({"error": f"The specified date '{start}' may not be in the correct format.",
+                        "note": f"Place a date in the format: yyyy-mm-dd or yyyymmdd"}), 404
 
 
 if __name__ == '__main__':
